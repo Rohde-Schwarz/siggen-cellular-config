@@ -1,0 +1,47 @@
+siggen-cellular-config
+Copyright (c) 2023-2026 Rohde & Schwarz GmbH & Co. KG
+
+This software is licensed under the MIT License. See LICENSE.
+
+Third-party software
+---------------------
+This repository depends on the following packages. They are not copied into
+this tree; they are installed separately (for example via pip) and remain
+under their own licenses.
+
+- RsInstrument (MIT)
+  https://pypi.org/project/RsInstrument/
+  Used by the NTN conformance scripts.
+
+- PyVISA (MIT)
+  https://pypi.org/project/PyVISA/
+  Transitive dependency of RsInstrument. Also imported directly by the older
+  example scripts (csi_report_multiplexing, prach_by_index, newradio_nb_IoT).
+
+- typing-extensions (PSF License)
+  Transitive dependency of RsInstrument / PyVISA.
+
+If you redistribute a bundle that includes copies of those packages, include
+their copyright notices and license texts with the bundle.
+
+3GPP / ETSI specifications
+--------------------------
+Numeric test parameters, reference measurement channel names, and related
+lookup tables in this repository are derived from 3GPP Technical
+Specifications, in particular 3GPP TS 38.181 (ETSI TS 138 181) and
+3GPP TS 36.181 (ETSI TS 136 181). Those specifications are copyright of the
+3GPP Organizational Partners / ETSI.
+
+This repository does not include copies of the specification documents.
+The lookup tables are an independent implementation of selected requirement
+values used to configure Rohde & Schwarz signal generators.
+
+Users must verify all values against the official ETSI/3GPP publication that
+applies to their test. 3GPP TS/TR documents have no legal status for product
+conformance; use the corresponding Organizational Partner publication
+(for example ETSI TS 138 181 or ETSI TS 136 181).
+
+Trademarks
+----------
+Rohde & Schwarz, R&S, and SMW are trademarks of Rohde & Schwarz GmbH & Co. KG.
+Other product names are trademarks of their respective owners.

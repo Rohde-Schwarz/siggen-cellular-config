@@ -1,0 +1,35 @@
+[project]
+name = "ntn-testing"
+version = "0.1.0"
+description = "NTN testing scripts for 3GPP TS 38.181 (NR) and TS 36.181 (LTE)"
+license = "MIT"
+authors = [{ name = "Rohde & Schwarz GmbH & Co. KG" }]
+requires-python = ">=3.12"
+dependencies = ["RsInstrument==1.124.0"]
+
+[project.optional-dependencies]
+dev = [
+    "pre-commit>=4.0",
+    "ruff>=0.9",
+]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["utils", "NR5G"]
+
+[tool.ruff]
+line-length = 120
+indent-width = 4
+target-version = "py312"
+output-format = "concise"
+
+[tool.ruff.lint]
+select = ["E", "F"]
+preview = true
+ignore = ["E741", "F401"]
+
+[tool.ty.rules]
+possibly-unresolved-reference = "warn"
