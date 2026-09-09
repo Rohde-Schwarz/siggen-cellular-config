@@ -2,6 +2,7 @@
 
 import argparse
 import configparser
+import sys
 from collections.abc import Iterable
 from pathlib import Path
 
@@ -73,3 +74,19 @@ def load_ini_as_namespace(
             flat[key] = _coerce_value(key, raw, freq_keys, bool_keys)
 
     return argparse.Namespace(**flat)
+
+
+def resolve_smw_timeout(argv: list[str] | None = None) -> int:
+    """Resolve SMW timeout in seconds: CLI --timeout, then instrument.ini, then 80."""
+    args = argv if argv is not None else sys.argv[1:]
+    for i, arg in enumerate(args):
+        if arg == "--timeout" and i + 1 < len(args):
+            return int(args[i + 1])
+        if arg.startswith("--timeout="):
+            return int(arg.split("=", 1)[1])
+    if _INSTRUMENT_CONFIG.is_file():
+        cp = configparser.ConfigParser()
+        cp.read(_INSTRUMENT_CONFIG, encoding="utf-8")
+        if cp.has_option("instrument", "timeout"):
+            return int(_strip_inline_comment(cp.get("instrument", "timeout")))
+    return 80

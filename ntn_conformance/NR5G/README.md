@@ -33,7 +33,7 @@ Loads an NR5G test INI file, merging three sources in order:
 
 | File | Section | Keys |
 |------|---------|------|
-| `instrument.ini` (`ntn_conformance/`) | `[instrument]` | `ip` |
+| `instrument.ini` (`ntn_conformance/`) | `[instrument]` | `ip`, `timeout` |
 | `NR5G/options.ini` | `[options]` | `log_scpi` |
 | Per-test INI file | `[test]` | test-specific keys |
 
@@ -61,6 +61,7 @@ Builds an `argparse.ArgumentParser` with the common options shared by all chapte
 | `--cell-id` | `int` | `0` | NR5G cell ID for the wanted signal on Source1 |
 | `--ue-id` | `int` | `0` | NR5G UE ID for the wanted signal on Source1 (`UBWP:USER0:UEID`). Included only when `include_ue_id=True` |
 | `--ip` | `str` | none | SMW IP address. When set, the script connects and configures the instrument |
+| `--timeout` | `int` | `80` | SMW OPC/VISA timeout in seconds |
 | `--log-scpi` | flag | off | Write all SCPI commands to `scpi-list.iec` after the run |
 
 ---

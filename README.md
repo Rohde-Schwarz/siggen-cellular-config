@@ -25,8 +25,7 @@ the official ETSI/3GPP publication that applies to your test. See [NOTICE](NOTIC
 
 - Python in this repository follows [PEP 8](https://peps.python.org/pep-0008/).
   NTN scripts under `ntn_conformance/` are additionally checked with
-  [Ruff](https://docs.astral.sh/ruff/) (`ntn_conformance/pyproject.toml` and
-  `ntn_conformance/.pre-commit-config.yaml`). The older example scripts in
+  [Ruff](https://docs.astral.sh/ruff/) (`ntn_conformance/pyproject.toml`). The older example scripts in
   `csi_report_multiplexing/`, `prach_by_index/`, and `newradio_nb_IoT/` are
   short samples and are not run through that lint setup.
 - Contributors must follow the Rohde & Schwarz

@@ -36,7 +36,7 @@ See [`configs/`](configs/) for per-section INI folders (`7_2/`, `7_3/`, `7_4_1/`
 
 | File | Section | Keys |
 |------|---------|------|
-| [`instrument.ini`](../../instrument.ini) (`ntn_conformance/`) | `[instrument]` | `ip` |
+| [`instrument.ini`](../../instrument.ini) (`ntn_conformance/`) | `[instrument]` | `ip`, `timeout` |
 | [`NR5G/options.ini`](../options.ini) | `[options]` | `log_scpi` |
 
 Per-test `[test]` keys:
@@ -68,6 +68,7 @@ CLI flags remain supported when used instead of a config file.
 | `--interferer-cell-id` | `int` | No | same as `--cell-id` | NR5G cell ID for the interfering signal on Source2. Only used by §7.4.1 and §7.8. |
 | `--interferer-ue-id` | `int` | No | `0` | NR5G UE ID for the interfering signal on Source2. Only used by §7.4.1 and §7.8. |
 | `--ip` | `str` | No | — | SMW IP address. When omitted the script looks up and validates the test configuration without connecting to any instrument. When provided the script connects and applies the full SCPI configuration. |
+| `--timeout` | `int` | No | `80` | SMW OPC/VISA timeout in seconds. Overrides `instrument.ini`. |
 | `--log-scpi` | flag | No | off | Writes every SCPI write command sent during the run to `scpi-list.iec` in `ntn_conformance/` after all configuration steps complete. Useful for verification and debugging. |
 
 Per TS 38.181, each test section defines which **RF channels to test** apply — typically **B**

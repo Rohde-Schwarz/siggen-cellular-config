@@ -39,7 +39,7 @@ B/M/T for you.
 ## Config files
 
 Pass a per-test INI under `configs/` as the only argument, or use CLI flags instead. Global
-settings (`ip`, `log_scpi`) are loaded from [`instrument.ini`](../../instrument.ini) and
+settings (`ip`, `timeout`, `log_scpi`) are loaded from [`instrument.ini`](../../instrument.ini) and
 [`NR5G/options.ini`](../options.ini). Each per-test file contains only a `[test]` section.
 
 ---
@@ -94,7 +94,7 @@ Pass the config file as the only argument:
 python NR5G/ts-38181-chapter8/test_8_2_1.py NR5G/ts-38181-chapter8/configs/8_2_1/5mhz_15khz_1rx_tdla100_puschtypeA.ini
 ```
 
-See [`configs/8_2_1/`](configs/8_2_1/) for all §8.2.1 test-case INI files. Each per-test file contains only a `[test]` section. Global settings are loaded automatically from [`instrument.ini`](../../instrument.ini) (`ip`) and [`NR5G/options.ini`](../options.ini) (`log_scpi`). Each file uses these keys:
+See [`configs/8_2_1/`](configs/8_2_1/) for all §8.2.1 test-case INI files. Each per-test file contains only a `[test]` section. Global settings are loaded automatically from [`instrument.ini`](../../instrument.ini) (`ip`, `timeout`) and [`NR5G/options.ini`](../options.ini) (`log_scpi`). Each file uses these keys:
 
 | Section | Keys |
 |---------|------|

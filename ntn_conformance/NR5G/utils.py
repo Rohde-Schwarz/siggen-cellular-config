@@ -8,6 +8,7 @@ from RsInstrument import RsInstrument
 from utils.config_utils import load_ini_as_namespace as _load_ini_generic
 from utils.helpers import parse_frequency
 from utils.scpi_utils import write_scpi
+from utils.smw_utils import get_harq_connector, is_smw_b9
 
 # Mapping between 3GPP FRCs and the corresponding SCPI names
 NTN_FRC_TYPE: dict[str, str] = {
@@ -96,6 +97,10 @@ def build_base_parser(
         )
     parser.add_argument("--ip", help="SMW IP address. When set, the script connects over raw TCP/IP socket.")
     parser.add_argument(
+        "--timeout", type=int, default=80,
+        help="SMW OPC/VISA timeout in seconds (converted to ms for RsInstrument). Default: 80.",
+    )
+    parser.add_argument(
         "--log-scpi", action="store_true",
         help="Write all SCPI commands sent to the SMW during this run to scpi-list.iec in ntn_conformance/.",
     )
@@ -133,11 +138,12 @@ def configure_advance_mode(smw: RsInstrument, num_rx: int, *, multi_ue: bool = F
 
     MIMO1X2 corresponds to 1 TX and 2 RX antennas. Call only when num_rx is not 1.
     When multiUE is True, uses MIMO2X1X1 (1 RX) or MIMO2X1X2 (2 RX) for dual-UE setups.
+    On B9 hardware, advanced mode is always configured (FAAFBB for num_rx == 1).
     """
-    if multi_ue is False and num_rx == 1:
+    if multi_ue is False and num_rx == 1 and not is_smw_b9(smw):
         return
     # FAAFBB stands for MIMO2X1X1
-    fading_by_num_rx = {1: "FAAFBB", 2: "MIMO2X1X2"} if multi_ue else {2: "MIMO1X2"}
+    fading_by_num_rx = {1: "FAAFBB", 2: "MIMO2X1X2"} if multi_ue else {1: "FAAFBB", 2: "MIMO1X2"}
     try:
         fading_mode = fading_by_num_rx[num_rx]
     except KeyError as exc:
@@ -378,12 +384,13 @@ def configure_harq(smw: RsInstrument, *, timing_advance: bool = False, ue: int |
     print("Configuring HARQ feedback...")
     ep = set_entity(ue)
     try:
+        tm_port = get_harq_connector(smw)
+        write_scpi(smw, f":SOURce1:INPut:TM{tm_port}:DIRection INP")
+        write_scpi(smw, f":SOURce1:INPut:TM{tm_port}:SIGNal FEED")
+        write_scpi(smw, f"{ep}:SOURce1:BB:NR5G:HFB:BASeband 0")
         write_scpi(smw, f"{ep}:SOURce1:BB:NR5G:HFB:MODE SER")
         write_scpi(smw, f"{ep}:SOURce1:BB:NR5G:HFB:SRATe R1M9")
         write_scpi(smw, f"{ep}:SOURce1:BB:NR5G:HFB:DELay -2")
-        write_scpi(smw, ":SOURce1:INPut:TM3:DIRection INP")
-        write_scpi(smw, ":SOURce1:INPut:TM3:SIGNal FEED")
-        write_scpi(smw, f"{ep}:SOURce1:BB:NR5G:HFB:BASeband 0") 
         if timing_advance:
             write_scpi(smw, f"{ep}:SOURce1:BB:NR5G:HFB:TAMode 1")
         print("HARQ feedback configured successfully")
