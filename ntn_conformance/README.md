@@ -175,15 +175,6 @@ including TS 38.181 §8.2 PUSCH and §8.3 PUCCH applicability rules.
 
 ---
 
-## Developer Notes
-
-When adding new test cases for a different 3GPP specification, create a dedicated folder for the
-test cases and add your tests there, following the pattern in `NR5G/ts-38181-chapter7/` and
-`NR5G/ts-38181-chapter8/`. LTE/E-UTRA NTN cases from TS 36.181 belong in their own folder
-alongside `NR5G/`.
-
----
-
 ## Contribution
 
 - Follow [PEP 8](https://peps.python.org/pep-0008/). This tree is checked with
