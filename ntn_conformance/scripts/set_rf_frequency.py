@@ -1,4 +1,4 @@
-"""Bulk-update freq in NR5G test INI files."""
+"""Bulk-update freq in NR5G and NB-IoT test INI files."""
 
 import argparse
 import re
@@ -9,11 +9,49 @@ from typing import NamedTuple
 from utils.helpers import parse_frequency
 
 # FR1 NTN uplink operating bands (Hz). Matches NR5G/ts-38181-chapter7/tables_3gpp.py OPERATING_BANDS.
-OPERATING_BANDS: dict[str, tuple[int, int]] = {
+NR_OPERATING_BANDS: dict[str, tuple[int, int]] = {
     "n253": (1_668_000_000, 1_675_000_000),
     "n254": (1_610_000_000, 1_626_500_000),
     "n255": (1_626_500_000, 1_660_500_000),
     "n256": (1_980_000_000, 2_010_000_000),
+}
+
+# NTN E-UTRA uplink operating bands (Hz). Matches NB_IoT/ts-36181-chapter7/tables_3gpp.py OPERATING_BANDS.
+NB_IOT_OPERATING_BANDS: dict[str, tuple[int, int]] = {
+    "n249": (1_616_000_000, 1_626_500_000),
+    "n252": (2_000_000_000, 2_020_000_000),
+    "n253": (1_668_000_000, 1_675_000_000),
+    "n254": (1_610_000_000, 1_626_500_000),
+    "n255": (1_626_500_000, 1_660_500_000),
+    "n256": (1_980_000_000, 2_010_000_000),
+}
+
+# Backward-compatible alias for tests and callers that imported OPERATING_BANDS.
+OPERATING_BANDS = NR_OPERATING_BANDS
+
+
+class RatIniTree(NamedTuple):
+    """One RAT's chapter folders and operating-band table for §7.5 band updates."""
+
+    label: str
+    root_dir_name: str
+    chapter_dirs: tuple[str, ...]
+    operating_bands: dict[str, tuple[int, int]]
+
+
+RAT_INI_TREES: dict[str, RatIniTree] = {
+    "nr": RatIniTree(
+        "NR5G",
+        "NR5G",
+        ("ts-38181-chapter7", "ts-38181-chapter8"),
+        NR_OPERATING_BANDS,
+    ),
+    "nb-iot": RatIniTree(
+        "NB-IoT",
+        "NB_IoT",
+        ("ts-36181-chapter7", "ts-36181-chapter8"),
+        NB_IOT_OPERATING_BANDS,
+    ),
 }
 
 
@@ -21,26 +59,24 @@ class SetRfFrequencyResult(NamedTuple):
     freq_hz: int | None
     interferer_freq_hz: int | None
     section: str | None
+    rat: str
     updated: list[str]
     skipped: list[str]
     band_warnings: list[str]
 
 
 def resolve_operating_band(freq_hz: int, operating_bands: dict[str, tuple[int, int]]) -> str | None:
-    """Return the first FR1 NTN band that contains freq_hz, or None if out of band."""
+    """Return the first operating band that contains freq_hz, or None if out of band."""
     for band, (ful_low_hz, ful_high_hz) in operating_bands.items():
         if ful_low_hz <= freq_hz <= ful_high_hz:
             return band
     return None
 
 
-CHAPTER_DIRS = ("ts-38181-chapter7", "ts-38181-chapter8")
-
-
-def _iter_test_ini_files(nr5g_root: Path):
+def _iter_test_ini_files(rat_root: Path, chapter_dirs: tuple[str, ...]):
     """Yield INI files under chapter 7 and 8 config trees only."""
-    for chapter in CHAPTER_DIRS:
-        chapter_root = nr5g_root / chapter
+    for chapter in chapter_dirs:
+        chapter_root = rat_root / chapter
         if chapter_root.is_dir():
             yield from sorted(chapter_root.rglob("*.ini"))
 
@@ -83,7 +119,7 @@ def _update_ini_file(
         target_band = resolve_operating_band(freq_hz, operating_bands)
         if target_band is None:
             band_warning = (
-                f"{path}: freq {freq_hz} Hz is outside FR1 NTN bands; band left unchanged"
+                f"{path}: freq {freq_hz} Hz is outside configured operating bands; band left unchanged"
             )
 
     for line in lines:
@@ -126,46 +162,39 @@ def _update_ini_file(
     return "unchanged", band_warning
 
 
-def set_rf_frequency(
+def _resolve_rat_keys(rat: str) -> list[str]:
+    if rat == "all":
+        return list(RAT_INI_TREES)
+    if rat not in RAT_INI_TREES:
+        raise ValueError(f"Unknown rat '{rat}'. Expected one of: all, {', '.join(RAT_INI_TREES)}.")
+    return [rat]
+
+
+def _process_ini_tree(
+    repo_root: Path,
+    tree: RatIniTree,
+    rat_root_override: Path | None,
     *,
-    freq: int | str | None = None,
-    interferer_freq: int | str | None = None,
-    section: str | None = None,
-    nr5g_dir: Path | str | None = None,
-    operating_bands: dict[str, tuple[int, int]] | None = None,
-) -> SetRfFrequencyResult:
-    """Update freq and/or interferer_freq in NR5G test INIs, optionally limited to one section."""
-    if freq is None and interferer_freq is None:
-        raise ValueError("At least one of freq or interferer_freq must be provided.")
-    if interferer_freq is not None and section != "7_5":
-        raise ValueError("--interferer-freq is only supported with --section 7_5.")
-
-    freq_hz = None if freq is None else (freq if isinstance(freq, int) else parse_frequency(str(freq)))
-    interferer_freq_hz = (
-        None
-        if interferer_freq is None
-        else (
-            interferer_freq
-            if isinstance(interferer_freq, int)
-            else parse_frequency(str(interferer_freq))
-        )
-    )
-    bands = OPERATING_BANDS if operating_bands is None else operating_bands
-
-    if nr5g_dir is None:
-        nr5g_root = Path(__file__).resolve().parent.parent / "NR5G"
+    freq_hz: int | None,
+    interferer_freq_hz: int | None,
+    section: str | None,
+    operating_bands_override: dict[str, tuple[int, int]] | None,
+    updated: list[str],
+    skipped: list[str],
+    band_warnings: list[str],
+) -> None:
+    if rat_root_override is None:
+        rat_root = repo_root / tree.root_dir_name
     else:
-        nr5g_root = Path(nr5g_dir)
+        rat_root = rat_root_override
 
-    updated: list[str] = []
-    skipped: list[str] = []
-    band_warnings: list[str] = []
+    bands = tree.operating_bands if operating_bands_override is None else operating_bands_override
 
-    for ini_path in _iter_test_ini_files(nr5g_root):
+    for ini_path in _iter_test_ini_files(rat_root, tree.chapter_dirs):
         if not _matches_section(ini_path, section):
             continue
 
-        rel_path = str(ini_path.relative_to(nr5g_root.parent))
+        rel_path = str(ini_path.relative_to(repo_root))
         update_band = section == "7_5" or (section is None and "configs/7_5/" in ini_path.as_posix())
         status, band_warning = _update_ini_file(
             ini_path,
@@ -181,10 +210,69 @@ def set_rf_frequency(
         elif status == "skipped":
             skipped.append(rel_path)
 
+
+def set_rf_frequency(
+    *,
+    freq: int | str | None = None,
+    interferer_freq: int | str | None = None,
+    section: str | None = None,
+    rat: str = "all",
+    nr5g_dir: Path | str | None = None,
+    nb_iot_dir: Path | str | None = None,
+    operating_bands: dict[str, tuple[int, int]] | None = None,
+) -> SetRfFrequencyResult:
+    """Update freq and/or interferer_freq in NR5G and/or NB-IoT test INIs.
+
+    ``rat`` is ``nr``, ``nb-iot``, or ``all`` (default). Optionally limit to one config section folder.
+    """
+    if freq is None and interferer_freq is None:
+        raise ValueError("At least one of freq or interferer_freq must be provided.")
+    if interferer_freq is not None and section != "7_5":
+        raise ValueError("--interferer-freq is only supported with --section 7_5.")
+
+    freq_hz = None if freq is None else (freq if isinstance(freq, int) else parse_frequency(str(freq)))
+    interferer_freq_hz = (
+        None
+        if interferer_freq is None
+        else (
+            interferer_freq
+            if isinstance(interferer_freq, int)
+            else parse_frequency(str(interferer_freq))
+        )
+    )
+
+    repo_root = Path(__file__).resolve().parent.parent
+    rat_keys = _resolve_rat_keys(rat)
+
+    updated: list[str] = []
+    skipped: list[str] = []
+    band_warnings: list[str] = []
+
+    overrides: dict[str, Path | None] = {
+        "nr": Path(nr5g_dir) if nr5g_dir is not None else None,
+        "nb-iot": Path(nb_iot_dir) if nb_iot_dir is not None else None,
+    }
+
+    for rat_key in rat_keys:
+        tree = RAT_INI_TREES[rat_key]
+        _process_ini_tree(
+            repo_root,
+            tree,
+            overrides[rat_key],
+            freq_hz=freq_hz,
+            interferer_freq_hz=interferer_freq_hz,
+            section=section,
+            operating_bands_override=operating_bands,
+            updated=updated,
+            skipped=skipped,
+            band_warnings=band_warnings,
+        )
+
     return SetRfFrequencyResult(
         freq_hz=freq_hz,
         interferer_freq_hz=interferer_freq_hz,
         section=section,
+        rat=rat,
         updated=updated,
         skipped=skipped,
         band_warnings=band_warnings,
@@ -194,6 +282,8 @@ def set_rf_frequency(
 def print_summary(result: SetRfFrequencyResult) -> None:
     """Print a human-readable summary of set_rf_frequency() results."""
     scope = f"section {result.section}" if result.section else "all sections"
+    rat_label = result.rat if result.rat != "all" else "NR5G and NB-IoT"
+    print(f"RAT: {rat_label}")
     print(f"Scope: {scope}")
     if result.freq_hz is not None:
         print(f"RF frequency: {result.freq_hz} Hz")
@@ -214,12 +304,19 @@ def print_summary(result: SetRfFrequencyResult) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Update freq in NR5G test INI files. For §7.5 configs, band is updated when "
-        "freq falls in an FR1 NTN operating band. Use --section to limit which configs are changed.",
+        description="Update freq in NR5G and NB-IoT test INI files. For §7.5 configs, band is "
+        "updated when freq falls in the RAT operating-band table. Use --section to limit which "
+        "configs are changed.",
+    )
+    parser.add_argument(
+        "--rat",
+        choices=("nr", "nb-iot", "all"),
+        default="all",
+        help="Which test INI trees to update (default: both NR5G and NB-IoT).",
     )
     parser.add_argument(
         "--section",
-        help="Config section folder name (e.g. 7_2, 7_5, 8_2_1). Omit to update all NR5G INIs.",
+        help="Config section folder name (e.g. 7_2, 7_5, 8_2_1). Omit to update all INIs in scope.",
     )
     parser.add_argument(
         "--freq",
@@ -243,6 +340,7 @@ def main() -> None:
             freq=args.freq,
             interferer_freq=args.interferer_freq,
             section=args.section,
+            rat=args.rat,
         )
     except ValueError as exc:
         print(f"Error: {exc}", file=sys.stderr)
@@ -253,3 +351,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+    

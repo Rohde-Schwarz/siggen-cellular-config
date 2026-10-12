@@ -31,7 +31,7 @@ def _coerce_value(
     freq_keys: frozenset[str],
     bool_keys: frozenset[str],
 ):
-    """Coerce an INI string value to bool, int, frequency, or str."""
+    """Coerce an INI string value to bool, int, float, frequency, or str."""
     value = _strip_inline_comment(raw)
     if not value:
         return None
@@ -42,9 +42,14 @@ def _coerce_value(
     try:
         return int(value)
     except ValueError:
-        if key in bool_keys:
-            return _BOOL_VALUES.get(value.lower(), value)
-        return value
+        pass
+    try:
+        return float(value)
+    except ValueError:
+        pass
+    if key in bool_keys:
+        return _BOOL_VALUES.get(value.lower(), value)
+    return value
 
 
 def load_ini_as_namespace(
@@ -56,8 +61,10 @@ def load_ini_as_namespace(
     """Load INI sections into a flat argparse.Namespace.
 
     Loads instrument.ini first, then any extra_configs, then the per-test INI.
-    Later files override earlier ones. Keys are coerced to int, frequency (Hz),
-    bool, or str depending on freq_keys / bool_keys membership.
+    Later files override earlier ones. Keys are coerced to int, float,
+    frequency (Hz), bool, or str depending on the value and on freq_keys /
+    bool_keys membership. Integer-like tokens stay ``int`` (``15``);
+    decimal tokens become ``float`` (``0.2``, ``3.75``).
     """
     config_path = Path(path)
     if not config_path.is_file():
