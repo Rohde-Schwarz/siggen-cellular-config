@@ -26,10 +26,12 @@ def get_power_levels(table: dict, bw: float, scs: float):
 def san_table_key(san_class: str | None, tdd: bool, bw: float, scs: float) -> str:
     """Return ``geo`` / ``leo`` / ``leo_tdd`` for chapter 7 lookup tables.
 
-    NB-IoT TDD rows exist only for standalone 200 kHz / 15 kHz. 1.4 MHz is
-    E-UTRA in-band and has no TDD requirements in these tables.
+    NB-IoT TDD rows exist only for LEO SAN, standalone 200 kHz / 15 kHz.
+    1.4 MHz is E-UTRA and has no TDD requirements in these tables.
     """
     if tdd:
+        if san_class == "geo":
+            raise ValueError("NB-IoT TDD requirements are defined only for LEO SAN")
         if (float(bw), float(scs)) != (0.2, 15.0):
             raise ValueError(
                 "NB-IoT TDD is only specified for 0.2 MHz / 15 kHz "

@@ -69,10 +69,9 @@ foreach ($ini in Get-ChildItem NB_IoT/ts-36181-chapter7/configs/7_2/*.ini) {
 
 ## Common Parameters
 
-All five scripts share a base set of CLI parameters. Scripts that use two signal sources
-(§7.4.1, §7.5, §7.8) require `--class` when `--ip` is set. `--class` selects the GEO or LEO
-FDD table. Use `--tdd` with `--class leo` on §7.2, §7.3, §7.4.1, and §7.5 to select the
-LEO TDD table.
+All five scripts share a base set of CLI parameters. Each script requires `--class` when
+`--ip` is set. `--class` selects the GEO or LEO FDD table. Use `--tdd` with `--class leo`
+on §7.2, §7.3, §7.4.1, and §7.5 to select the LEO TDD table.
 
 Trigger configuration is handled by `configure_triggers(smw, sources)` from `NB_IoT.utils`:
 

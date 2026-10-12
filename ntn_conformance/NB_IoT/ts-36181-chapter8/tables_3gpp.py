@@ -360,7 +360,7 @@ NPRACH_PERF_REQ_TDD: dict[tuple[int, int, int, str], PrachTestConfig] = {
     (1, 4, 0, "NTN-TDLC5-1"): PrachTestConfig(11.2, 33.3333, DELTA_POWER_SC375),
 
     (1, 4, 1, "NTN-TDLA100-1"): PrachTestConfig(15.9, 133.3333, DELTA_POWER_SC375),
-    (1, 4, 1, "NTN-TDLC5-1"): PrachTestConfig(11.3, 33.3333, DELTA_POWER_SC375),
+    (1, 4, 1, "NTN-TDLC5-1"): PrachTestConfig(11.3, 133.3333, DELTA_POWER_SC375),
 
     (1, 8, 0, "NTN-TDLA100-1"): PrachTestConfig(9.7, 33.3333, DELTA_POWER_SC375),
     (1, 8, 0, "NTN-TDLC5-1"): PrachTestConfig(6.2, 33.3333, DELTA_POWER_SC375),

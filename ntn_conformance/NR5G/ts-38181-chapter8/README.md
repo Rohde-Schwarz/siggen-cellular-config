@@ -53,6 +53,7 @@ settings (`ip`, `timeout`, `log_scpi`) are loaded from [`instrument.ini`](../../
 | `test_8_2_3.py` | §8.2.3 UL timing adjustment accuracy, dual-UE |
 | `test_8_2_4.py` | §8.2.4 PUSCH performance with repetition Type A |
 | `test_8_2_5.py` | §8.2.5 PUSCH performance with DMRS bundling |
+| `test_8_2_6.py` | §8.2.6 PUSCH performance with inter-slot OCC  |
 | `test_8_3_1.py` | §8.3.1 PUCCH Format 0 |
 | `test_8_3_2_1.py` | §8.3.2.1 PUCCH Format 1 — SR false alarm |
 | `test_8_3_2_2.py` | §8.3.2.2 PUCCH Format 1 — ACK missed detection |
@@ -63,7 +64,7 @@ settings (`ip`, `timeout`, `log_scpi`) are loaded from [`instrument.ini`](../../
 | `test_8_3_6_1_1.py` | §8.3.6.1.1 Multi-slot PUCCH Format 1 — NACK to ACK false detection |
 | `test_8_3_6_1_2.py` | §8.3.6.1.2 Multi-slot PUCCH Format 1 — ACK missed detection |
 | `test_8_4_1.py` | §8.4.1 PRACH — false alarm probability and missed detection |
-| `configs/` | Per-section INI folders for §8.2.1–§8.2.5, §8.3.1–§8.3.6.1, and §8.4.1 test cases |
+| `configs/` | Per-section INI folders for §8.2.1–§8.2.6, §8.3.1–§8.3.6.1, and §8.4.1 test cases |
 
 ### §8.2.1 / §8.2.2 parameters
 
@@ -83,6 +84,7 @@ python NR5G/ts-38181-chapter8/test_8_2_2.py --pusch-type B --bw 10 --scs 30 --nu
 python NR5G/ts-38181-chapter8/test_8_2_3.py --pusch-type A --bw 5 --scs 15 --num-rx 2 --propagation MP_NTN_15
 python NR5G/ts-38181-chapter8/test_8_2_4.py --pusch-type A --bw 5 --scs 15 --num-rx 2 --propagation NTN_TDLA100_200_LOW
 python NR5G/ts-38181-chapter8/test_8_2_5.py --pusch-type B --bw 10 --scs 30 --num-rx 1 --propagation NTN_TDLA100_200_SISO
+python NR5G/ts-38181-chapter8/test_8_2_6.py --pusch-type A --bw 5 --scs 15 --num-rx 2 --propagation NTN_TDLC5_200_LOW
 ```
 
 ### Config-files (§8.2.1)
@@ -195,9 +197,27 @@ Type A cases configure PUSCH repetition Type A with DMRS bundling (`AGFT N4` at 
 python NR5G/ts-38181-chapter8/test_8_2_5.py --bw 5 --scs 15 --pusch-type A --num-rx 2 --propagation NTN_TDLA100_200_LOW --ip <ip_address> --log-scpi
 ```
 
-### §8.2.4 / §8.2.5 parameters
+### Config-files (§8.2.6)
 
-Same as §8.2.1 / §8.2.2. Test tables for §8.2.4 and §8.2.5 define TDLA100 only: `NTN_TDLA100_200_SISO` (1 RX) or `NTN_TDLA100_200_LOW` (2 RX).
+```powershell
+python NR5G/ts-38181-chapter8/test_8_2_6.py NR5G/ts-38181-chapter8/configs/8_2_6/5mhz_15khz_1rx_tdlc5_puschtypeA.ini
+```
+
+See [`configs/8_2_6/`](configs/8_2_6/) for all §8.2.6 test-case INI files. Keys:
+
+| Section | Keys |
+|---------|------|
+| `[test]` | `bw`, `scs`, `pusch_type`, `num_rx`, `propagation`, `freq`, `cell_id` |
+
+Dual-UE OCC: Entity1 (UE0) uses OCC index 0 and DMRS port AP0; Entity2 (UE1) uses OCC index 1 and DMRS port AP1. Multiplex offset: 200 Hz `FOFFset` on Entity2 only (UE1). Fading is enabled on both entities (same TDL profile as `--propagation`); AWGN is configured on Entity1 only (`sources=1`, `ue=0`).
+
+```powershell
+python NR5G/ts-38181-chapter8/test_8_2_6.py --bw 10 --scs 30 --pusch-type B --num-rx 2 --propagation NTN_TDLC5_200_LOW --ip <ip_address> --log-scpi
+```
+
+### §8.2.4 / §8.2.5 / §8.2.6 parameters
+
+Same as §8.2.1 / §8.2.2. Test tables for §8.2.4 and §8.2.5 define TDLA100 only: `NTN_TDLA100_200_SISO` (1 RX) or `NTN_TDLA100_200_LOW` (2 RX). §8.2.6 uses TDLC5 only: `NTN_TDLC5_200_SISO` (1 RX) or `NTN_TDLC5_200_LOW` (2 RX).
 
 ### §8.3.1 parameters
 
@@ -559,6 +579,7 @@ python NR5G/ts-38181-chapter8/test_8_4_1.py --bw 5 --scs 15 --prach-scs 15 --num
 | `PUSCH_PERF_REQ_8_2_3` | §8.2.3 | Keyed by `(pusch_type, bw, scs, num_rx, propagation)`; `MP_NTN_15` / `MP_NTN_30` |
 | `PUSCH_PERF_REQ_8_2_4` | §8.2.4 | Keyed by `(pusch_type, bw, scs, num_rx, propagation)`; TDLA100 only |
 | `PUSCH_PERF_REQ_8_2_5` | §8.2.5 | Keyed by `(pusch_type, bw, scs, num_rx, propagation)`; TDLA100 only |
+| `PUSCH_PERF_REQ_8_2_6` | §8.2.6 | Keyed by `(pusch_type, bw, scs, num_rx, propagation)`; TDLC5 only |
 | `PUCCH_PERF_REQ_8_3_1` | §8.3.1.5 | Keyed by `(bw, scs, num_rx, propagation)` |
 | `PUCCH_PERF_REQ_8_3_2_1` | §8.3.2.1 | Keyed by `(bw, scs, num_rx, propagation)` |
 | `PUCCH_PERF_REQ_8_3_2_2` | §8.3.2.2 | Keyed by `(bw, scs, num_rx, propagation)` |
@@ -570,8 +591,8 @@ python NR5G/ts-38181-chapter8/test_8_4_1.py --bw 5 --scs 15 --prach-scs 15 --num
 | `PUCCH_PERF_REQ_8_3_6_1_2` | §8.3.6.1.2 | Keyed by `(bw, scs, num_rx, propagation)` |
 | `FADING_PROFILES` | §8.2.1+ | Maps propagation condition to SMW FSIMulator standard name |
 | `MOV_PROP_PROFILES` | §8.2.3 | Maps moving propagation condition to SMW FSIMulator standard name |
-| `PuschTestConfig` | §8.2.1–§8.2.5 | Lookup result: FRC, SNR (dB), AWGN power (dBm), AWGN BW (MHz) |
-| `get_pusch_test_config()` | §8.2.1–§8.2.5 | Lookup helper; prints `#Test Config#` block with lookup keys and table values; pass the section table as first argument |
+| `PuschTestConfig` | §8.2.1–§8.2.6 | Lookup result: FRC, SNR (dB), AWGN power (dBm), AWGN BW (MHz) |
+| `get_pusch_test_config()` | §8.2.1–§8.2.6 | Lookup helper; prints `#Test Config#` block with lookup keys and table values; pass the section table as first argument |
 | `PucchTestConfig` | §8.3.1–§8.3.6 | Lookup result: SNR (dB), AWGN power (dBm), AWGN BW (MHz) |
 | `get_pucch_test_config()` | §8.3.1 | Lookup helper; prints `#Test Config#` block with lookup keys and table values; pass the section table as first argument |
 | `PrachTestConfig` | §8.4.1 | Lookup result: SNR (dB), time error tolerance (us), freq offset (Hz), AWGN power (dBm), AWGN BW (MHz) |

@@ -55,6 +55,10 @@ def main():
     if not args.ip:
         return
 
+    if args.san_class is None:
+        print("Error: --class is required when --ip is set.", file=sys.stderr)
+        sys.exit(1)
+
     test_config = get_power_levels(SAN_REF_SENS_LEVELS[table_key], args.bw, args.scs)
 
     enable_scpi_logging(args.log_scpi)

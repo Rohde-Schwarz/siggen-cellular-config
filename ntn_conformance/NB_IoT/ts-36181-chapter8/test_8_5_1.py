@@ -64,18 +64,24 @@ def main():
     )
 
     args = parse_args_or_ini(parser)
+    if args.tdd and args.occ_sequence_index is not None:
+        parser.error(
+            "Length-2 OCC is only defined for FDD "
+            "(Tables 8.5.1.5-4 / 8.5.1.5-5); "
+            "do not combine --tdd with --occ-sequence-index"
+        )
+
     # INI loader coerces numeric strings to int; restore expected types.
     args.scs = float(args.scs)
     if args.occ_sequence_index is not None:
         args.occ_sequence_index = int(args.occ_sequence_index)
 
-    occ_sequence_index = None if args.tdd else args.occ_sequence_index
     test_config = get_pusch_test_config(
         NPUSCH_FORMAT1_PERF_REQ_TDD if args.tdd
-        else NPUSCH_FORMAT1_PERF_REQ_OCC_FDD if occ_sequence_index is not None
+        else NPUSCH_FORMAT1_PERF_REQ_OCC_FDD if args.occ_sequence_index is not None
         else NPUSCH_FORMAT1_PERF_REQ_FDD,
         args.num_rx, args.repetition_num, args.scs, args.propagation,
-        occ_sequence_index=occ_sequence_index,
+        occ_sequence_index=args.occ_sequence_index,
     )
 
     print("--------------------------------")

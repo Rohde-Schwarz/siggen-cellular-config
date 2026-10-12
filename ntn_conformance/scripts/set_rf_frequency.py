@@ -65,12 +65,9 @@ class SetRfFrequencyResult(NamedTuple):
     band_warnings: list[str]
 
 
-def resolve_operating_band(freq_hz: int, operating_bands: dict[str, tuple[int, int]]) -> str | None:
-    """Return the first operating band that contains freq_hz, or None if out of band."""
-    for band, (ful_low_hz, ful_high_hz) in operating_bands.items():
-        if ful_low_hz <= freq_hz <= ful_high_hz:
-            return band
-    return None
+def resolve_operating_bands(freq_hz: int, operating_bands: dict[str, tuple[int, int]]) -> list[str]:
+    """Return all operating bands that contain freq_hz (may be empty or have multiple matches)."""
+    return [band for band, (lo, hi) in operating_bands.items() if lo <= freq_hz <= hi]
 
 
 def _iter_test_ini_files(rat_root: Path, chapter_dirs: tuple[str, ...]):
@@ -102,6 +99,7 @@ def _update_ini_file(
     interferer_freq_hz: int | None,
     update_band: bool,
     operating_bands: dict[str, tuple[int, int]],
+    explicit_band: str | None = None,
 ) -> tuple[str, str | None]:
     """Update freq and/or interferer_freq in one INI file.
 
@@ -116,11 +114,32 @@ def _update_ini_file(
     target_band: str | None = None
 
     if update_band and freq_hz is not None:
-        target_band = resolve_operating_band(freq_hz, operating_bands)
-        if target_band is None:
-            band_warning = (
-                f"{path}: freq {freq_hz} Hz is outside configured operating bands; band left unchanged"
-            )
+        if explicit_band is not None:
+            band_range = operating_bands.get(explicit_band)
+            if band_range is None:
+                band_warning = (
+                    f"{path}: band '{explicit_band}' is not in the operating-band table; band left unchanged"
+                )
+            elif not (band_range[0] <= freq_hz <= band_range[1]):
+                band_warning = (
+                    f"{path}: freq {freq_hz} Hz is outside band {explicit_band} range "
+                    f"({band_range[0]}–{band_range[1]} Hz); band left unchanged"
+                )
+            else:
+                target_band = explicit_band
+        else:
+            matching = resolve_operating_bands(freq_hz, operating_bands)
+            if len(matching) == 1:
+                target_band = matching[0]
+            elif len(matching) > 1:
+                band_warning = (
+                    f"{path}: freq {freq_hz} Hz matches multiple bands ({', '.join(matching)}); "
+                    "supply --band to disambiguate; band left unchanged"
+                )
+            else:
+                band_warning = (
+                    f"{path}: freq {freq_hz} Hz is outside configured operating bands; band left unchanged"
+                )
 
     for line in lines:
         if freq_hz is not None:
@@ -179,6 +198,7 @@ def _process_ini_tree(
     interferer_freq_hz: int | None,
     section: str | None,
     operating_bands_override: dict[str, tuple[int, int]] | None,
+    explicit_band: str | None = None,
     updated: list[str],
     skipped: list[str],
     band_warnings: list[str],
@@ -202,6 +222,7 @@ def _process_ini_tree(
             interferer_freq_hz=interferer_freq_hz,
             update_band=update_band and freq_hz is not None,
             operating_bands=bands,
+            explicit_band=explicit_band,
         )
         if band_warning is not None:
             band_warnings.append(band_warning)
@@ -217,6 +238,7 @@ def set_rf_frequency(
     interferer_freq: int | str | None = None,
     section: str | None = None,
     rat: str = "all",
+    band: str | None = None,
     nr5g_dir: Path | str | None = None,
     nb_iot_dir: Path | str | None = None,
     operating_bands: dict[str, tuple[int, int]] | None = None,
@@ -224,6 +246,7 @@ def set_rf_frequency(
     """Update freq and/or interferer_freq in NR5G and/or NB-IoT test INIs.
 
     ``rat`` is ``nr``, ``nb-iot``, or ``all`` (default). Optionally limit to one config section folder.
+    Supply ``band`` to pin the operating band when the frequency lies in an ambiguous overlap region.
     """
     if freq is None and interferer_freq is None:
         raise ValueError("At least one of freq or interferer_freq must be provided.")
@@ -263,6 +286,7 @@ def set_rf_frequency(
             interferer_freq_hz=interferer_freq_hz,
             section=section,
             operating_bands_override=operating_bands,
+            explicit_band=band,
             updated=updated,
             skipped=skipped,
             band_warnings=band_warnings,
@@ -328,6 +352,16 @@ def main() -> None:
         type=parse_frequency,
         help="Interferer frequency for §7.5 INIs only; requires --section 7_5.",
     )
+    parser.add_argument(
+        "--band",
+        help=(
+            "Pin the operating band for §7.5 band updates (e.g. n254, n255). "
+            "Required when the frequency falls in an overlapping range such as "
+            "NB-IoT n249/n254 or the shared NB-IoT/NR n254/n255 boundary. "
+            "The frequency is validated against the supplied band's range before "
+            "any INI is written; a mismatch emits a warning and leaves the band unchanged."
+        ),
+    )
     args = parser.parse_args()
 
     if args.freq is None and args.interferer_freq is None:
@@ -341,6 +375,7 @@ def main() -> None:
             interferer_freq=args.interferer_freq,
             section=args.section,
             rat=args.rat,
+            band=args.band,
         )
     except ValueError as exc:
         print(f"Error: {exc}", file=sys.stderr)

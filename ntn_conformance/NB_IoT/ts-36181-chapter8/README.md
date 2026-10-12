@@ -264,7 +264,7 @@ python NB_IoT/ts-36181-chapter8/test_8_5_1.py --num-rx 2 --scs 15 --repetition-n
 | RX antennas | `--num-rx` | `1`, `2` (TDD Table 8.5.2.5-3 is 1 RX only) |
 | Sub-carrier spacing | `--scs` | `3.75` (kHz, Table 8.5.2.5-1), `15` (kHz, Tables 8.5.2.5-2 / 8.5.2.5-3) |
 | Repetition number | `--repetition-num` | `16` (FDD, Tables 8.5.2.5-1 / 8.5.2.5-2), `4` (TDD, Table 8.5.2.5-3) |
-| Propagation | `--propagation` | `NTN-TDLA100-1` |
+| Propagation | `--propagation` | `NTN-TDLA100-1`. Omitted from the command, the default `NTN-TDLA100-1` is used |
 | Duplex | `--tdd` | omit (FDD), flag (TDD, Table 8.5.2.5-3) |
 
 ### Config-files (§8.5.2)

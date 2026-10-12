@@ -22,6 +22,7 @@ NTN_FRC_TYPE: dict[str, str] = {
     "G-FR1-NTN-A3-7": "FR1NA37",
     "G-FR1-NTN-A3-8": "FR1NA38",
     "G-FR1-NTN-A3A-1": "TS38181_FR1A3A1",
+    "G-FR1-NTN-A3A-3": "TS38181_FR1A3A3",
     "G-FR1-NTN-A3A-2": "FR1NA3A2",
     "G-FR1-A3A-2": "FR1NA3A2",
     "G-FR1-NTN-A3A-4": "FR1NA3A4",
@@ -379,15 +380,25 @@ def configure_awgn(
         print("--------------------------------")
 
 
-def configure_harq(smw: RsInstrument, *, timing_advance: bool = False, ue: int | None = None):
+def configure_harq(
+    smw: RsInstrument,
+    sources: int = 1,
+    *,
+    timing_advance: bool = False,
+    ue: int | None = None,
+):
     """Configure HARQ feedback for NR5G uplink testing (Chapter 8 only)."""
+    if sources not in (1, 2):
+        raise ValueError(f"sources must be 1 or 2, got {sources}")
     print("Configuring HARQ feedback...")
     ep = set_entity(ue)
+    baseband = ue if ue is not None else 0
     try:
         tm_port = get_harq_connector(smw)
-        write_scpi(smw, f":SOURce1:INPut:TM{tm_port}:DIRection INP")
-        write_scpi(smw, f":SOURce1:INPut:TM{tm_port}:SIGNal FEED")
-        write_scpi(smw, f"{ep}:SOURce1:BB:NR5G:HFB:BASeband 0")
+        for source in range(1, sources + 1):
+            write_scpi(smw, f":SOURce{source}:INPut:TM{tm_port}:DIRection INP")
+            write_scpi(smw, f":SOURce{source}:INPut:TM{tm_port}:SIGNal FEED")
+        write_scpi(smw, f"{ep}:SOURce1:BB:NR5G:HFB:BASeband {baseband}")
         write_scpi(smw, f"{ep}:SOURce1:BB:NR5G:HFB:MODE SER")
         write_scpi(smw, f"{ep}:SOURce1:BB:NR5G:HFB:SRATe R1M9")
         write_scpi(smw, f"{ep}:SOURce1:BB:NR5G:HFB:DELay -2")
@@ -409,6 +420,36 @@ def configure_repTypeA(smw: RsInstrument):
     write_scpi(smw, f"{prefix}AGFT F2")
     print("PUSCH repetition Type A configured successfully.")
     print("--------------------------------")
+
+
+def configure_OCC(smw: RsInstrument, ue: int, occ_index: int) -> None:
+    """Configure inter-slot OCC PUSCH settings (§8.2.6).
+
+    Sets repetition Type A (`REPetitions TA`), aggregation factor F2, OCC length L2,
+    OCC index, and DMRS antenna port (AP0 for UE0, AP1 for UE1). Applies a 200 Hz BB
+    frequency offset on the second entity only (UE1); UE0 has no offset.
+    """
+    if ue not in (0, 1):
+        raise ValueError(f"ue must be 0 or 1, got {ue}")
+    if occ_index not in (0, 1):
+        raise ValueError(f"occ_index must be 0 or 1, got {occ_index}")
+    ep = set_entity(ue)
+    prefix = f"{ep}:SOURce1:BB:NR5G:SCHed:CELL0:SUBF0:USER0:BWPart0:ALLoc0:"
+    print(f"Configuring inter-slot OCC (UE {ue}, OCC index {occ_index})...")
+    try:
+        write_scpi(smw, f"{prefix}REPetitions TA")
+        write_scpi(smw, f"{prefix}PERiod 1")
+        write_scpi(smw, f"{prefix}DURation 1")
+        write_scpi(smw, f"{prefix}AGFT F2")
+        write_scpi(smw, f"{prefix}OLENgth L2")
+        write_scpi(smw, f"{prefix}OSINDex {occ_index}")
+        write_scpi(smw, f"{prefix}PUSCh:DMRS:APSelect0 AP{occ_index}")
+        if ue == 1:
+            write_scpi(smw, f"{ep}:SOURce1:BB:FOFFset 200")
+        print(f"Inter-slot OCC configured successfully (UE {ue}, index {occ_index})")
+        print("--------------------------------")
+    except Exception as exc:
+        raise RuntimeError(f"Inter-slot OCC configuration failed: {exc}") from exc
 
 
 def configure_pucch(

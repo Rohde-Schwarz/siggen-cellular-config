@@ -15,25 +15,12 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from tables_3gpp import (
-    NB_IOT_INBAND_REF_MEAS_CHANNELS, SAN_GEO_REF_SENS_LEVELS, SAN_LEO_REF_SENS_LEVELS, TestConfig,
-    get_power_levels,
+    SAN_GEO_REF_SENS_LEVELS, SAN_LEO_REF_SENS_LEVELS, apply_nb_iot_inband_channel, get_power_levels,
 )
 from NR5G.utils import build_base_parser, configure_frc, configure_node, configure_triggers
 from NR5G.utils import load_ini_as_namespace
 from utils.scpi_utils import enable_scpi_logging, print_scpi_log
 from utils.smw_utils import configure_rf, connect_smw
-
-
-def apply_nb_iot_inband_channel(
-    test_config: TestConfig, bw: int, scs: int, nb_iot_inband: bool,
-):
-    if not nb_iot_inband:
-        return test_config
-    try:
-        ref_meas_channel = NB_IOT_INBAND_REF_MEAS_CHANNELS[(bw, scs)]
-    except KeyError:
-        return test_config
-    return TestConfig(ref_meas_channel, test_config.power_dbm, test_config.interfering_power_dbm)
 
 
 def main():

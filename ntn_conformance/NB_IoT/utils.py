@@ -108,7 +108,7 @@ def build_base_parser(
     if include_class:
         parser.add_argument(
             "--class", dest="san_class", choices=("leo", "geo"),
-            help="SAN orbit class. If omitted, both LEO and GEO are printed.",
+            help="SAN orbit class (leo or geo). Required when --ip is set.",
         )
     parser.add_argument(
         "--freq", type=parse_frequency, default=1_620_000_000,

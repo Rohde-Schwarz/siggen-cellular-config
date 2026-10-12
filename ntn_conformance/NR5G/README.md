@@ -166,6 +166,13 @@ period 1, duration 1, and aggregation factor `F2`.
 Configures PUSCH repetition Type A with DMRS bundling (§8.2.5). Aggregation factor is `F4` at
 15 kHz SCS or `F8` at 30 kHz SCS.
 
+### `configure_OCC(smw, ue, occ_index)`
+
+Configures inter-slot OCC PUSCH scheduler settings (§8.2.6) on the given multi-UE entity. Sets
+repetition Type A (`REPetitions TA`, period 1, duration 1), aggregation factor `F2`, OCC length
+`L2`, OCC index (`0` or `1`), DMRS antenna port (`AP0` / `AP1`). On UE1 only, sets a
+200 Hz baseband frequency offset (`FOFFset`); UE0 has no offset.
+
 ---
 
 ## PUCCH

@@ -48,8 +48,8 @@ Per-test `[test]` keys:
 | Script | Additional keys |
 |--------|-----------------|
 | `test_7_2.py` | `nb_iot_inband` |
-| `test_7_4_1.py` | `edge`, `interferer_cell_id`, `interferer_ue_id` |
-| `test_7_5.py` | `band`, `interferer_freq` (optional: `ful_low`, `ful_high`) |
+| `test_7_4_1.py` | `edge`, `interferer_cell_id`, `interferer_ue_id`, `nb_iot_inband` |
+| `test_7_5.py` | `band`, `interferer_freq`, `nb_iot_inband` (optional: `ful_low`, `ful_high`) |
 | `test_7_8.py` | `interference_pos`, `interferer_cell_id`, `interferer_ue_id` |
 
 CLI flags remain supported when used instead of a config file.
@@ -257,6 +257,7 @@ All common parameters apply, plus:
 | `--edge` | `lower` \| `upper` | Yes (with `--ip`) | — | Specifies which SAN RF bandwidth edge the interferer is placed at. The script computes the exact interferer center frequency from the wanted frequency and this edge. |
 | `--interferer-cell-id` | `int` | No | same as `--cell-id` | NR5G cell ID for the interfering signal on Source2. Use when the interferer should use a different cell ID than the wanted signal. |
 | `--interferer-ue-id` | `int` | No | `0` | NR5G UE ID for the interfering signal on Source2 (`Source2:BB:NR5G:UBWP:USER0:UEID`). |
+| `--nb-iot-inband` | flag | No | off | Same A1-10 / A1-11 wanted-signal FRC substitution as §7.2 (BW 5–20 MHz, SCS 15 kHz); wanted and interferer power unchanged. |
 
 `--class` is also required when `--ip` is set.
 
@@ -371,6 +372,7 @@ All common parameters apply, plus:
 | `--band` | `n253`\|`n254`\|`n255`\|`n256` | No | `n254` | NR operating band preset from `OPERATING_BANDS`. Determines OOB range boundaries. |
 | `--ful-low` | `int` | No | band preset | Override F_UL,low in Hz. |
 | `--ful-high` | `int` | No | band preset | Override F_UL,high in Hz. |
+| `--nb-iot-inband` | flag | No | off | Same A1-10 / A1-11 wanted-signal FRC substitution as §7.2 (BW 5–20 MHz, SCS 15 kHz); wanted power unchanged. |
 
 `--class` is required when `--ip` is set.
 
@@ -528,15 +530,15 @@ tables it needs.
 
 | Constant | Section | Used by |
 |----------|---------|---------|
-| `SAN_GEO_REF_SENS_LEVELS`, `SAN_LEO_REF_SENS_LEVELS`, `NB_IOT_INBAND_REF_MEAS_CHANNELS` | §7.2 | `test_7_2.py` |
+| `SAN_GEO_REF_SENS_LEVELS`, `SAN_LEO_REF_SENS_LEVELS`, `NB_IOT_INBAND_REF_MEAS_CHANNELS`, `apply_nb_iot_inband_channel` | §7.2 (FRC swap also §7.4.1, §7.5) | `test_7_2.py`, `test_7_4_1.py`, `test_7_5.py` |
 | `SAN_LEO_DYNAMIC_RANGE` | §7.3 | `test_7_3.py` |
 | `ACS_INTERFERER_OFFSET_MHZ`, `ACS_INTERFERER_PARAMS`, `SAT_GEO_ACS`, `SAT_LEO_ACS` | §7.4.1 | `test_7_4_1.py` |
 | `OPERATING_BANDS`, `SAT_GEO_OOB`, `SAT_LEO_OOB` | §7.5 | `test_7_5.py` |
 | `SAT_GEO_ICS`, `SAT_LEO_ICS`, `ICS_INTERFERER_RBS`, `ICS_RB_OFFSETS_IS_HIGH`, `ICS_RB_OFFSETS_IS_LOW` | §7.8 | `test_7_8.py` |
 
 `TestConfig` is also defined in `tables_3gpp.py` and imported by scripts that need it
-for type annotations or to construct updated configurations (e.g. NB-IoT channel substitution
-in §7.2).
+for type annotations or to construct updated configurations (e.g. NB-IoT in-band channel
+substitution in §7.2, §7.4.1, and §7.5 via `apply_nb_iot_inband_channel`).
 
 `get_power_levels(table, bw, scs)` looks up a `TestConfig` from a chapter table for
 the given bandwidth and SCS (LEO or GEO table is selected by the caller before calling).

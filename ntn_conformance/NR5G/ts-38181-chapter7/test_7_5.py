@@ -14,7 +14,9 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from RsInstrument import RsInstrument
 
-from tables_3gpp import OPERATING_BANDS, SAT_GEO_OOB, SAT_LEO_OOB, get_power_levels
+from tables_3gpp import (
+    OPERATING_BANDS, SAT_GEO_OOB, SAT_LEO_OOB, apply_nb_iot_inband_channel, get_power_levels,
+)
 from utils.helpers import parse_frequency
 from NR5G.utils import build_base_parser, configure_frc, configure_node, configure_triggers
 from NR5G.utils import load_ini_as_namespace
@@ -103,6 +105,10 @@ def main():
         "--ful-high", type=parse_frequency, default=None,
         help="Override highest frequency of UL operating band in Hz or with unit suffix.",
     )
+    parser.add_argument(
+        "--nb-iot-inband", action="store_true",
+        help="Use G-FR1-NTN-A1-10 / A1-11 reference channels where applicable (SAN supports NB-IoT in-band operation).",
+    )
     if len(sys.argv) == 2 and sys.argv[1].endswith(".ini"):
         args = load_ini_as_namespace(sys.argv[1])
     else:
@@ -132,6 +138,7 @@ def main():
         args.bw,
         args.scs,
     )
+    test_config = apply_nb_iot_inband_channel(test_config, args.bw, args.scs, args.nb_iot_inband)
 
     enable_scpi_logging(args.log_scpi)
     smw = connect_smw(args.ip)

@@ -85,6 +85,10 @@ def main():
     if not args.ip:
         return
 
+    if args.san_class is None:
+        print("Error: --class is required when --ip is set.", file=sys.stderr)
+        sys.exit(1)
+
     check_argument(args)
 
     test_config = get_power_levels(SAN_DYNAMIC_RANGE[table_key], args.bw, args.scs)
