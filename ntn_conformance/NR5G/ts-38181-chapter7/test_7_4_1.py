@@ -16,7 +16,7 @@ from RsInstrument import RsInstrument
 
 from tables_3gpp import (
     ACS_INTERFERER_OFFSET_MHZ, ACS_INTERFERER_PARAMS, SAT_GEO_ACS, SAT_LEO_ACS, TestConfig,
-    get_power_levels,
+    apply_nb_iot_inband_channel, get_power_levels,
 )
 from NR5G.utils import build_base_parser, configure_frc, configure_node, configure_triggers
 from NR5G.utils import load_ini_as_namespace
@@ -97,6 +97,10 @@ def main():
         "--interferer-ue-id", dest="interferer_ue_id", type=int, default=0,
         help="NR5G UE ID for the interfering signal on Source2 (default: 0).",
     )
+    parser.add_argument(
+        "--nb-iot-inband", action="store_true",
+        help="Use G-FR1-NTN-A1-10 / A1-11 reference channels where applicable (SAN supports NB-IoT in-band operation).",
+    )
     if len(sys.argv) == 2 and sys.argv[1].endswith(".ini"):
         args = load_ini_as_namespace(sys.argv[1])
     else:
@@ -117,6 +121,7 @@ def main():
         args.bw,
         args.scs,
     )
+    test_config = apply_nb_iot_inband_channel(test_config, args.bw, args.scs, args.nb_iot_inband)
 
     enable_scpi_logging(args.log_scpi)
     smw = connect_smw(args.ip)

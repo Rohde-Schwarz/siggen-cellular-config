@@ -271,6 +271,26 @@ PUSCH_PERF_REQ_8_2_5: dict[tuple[str, int, int, int, str], PuschTestConfig] = {
 
 
 """
+§8.2.6 Performance requirements for PUSCH with inter-slot OCC
+"""
+
+# Tables 8.2.6.5-1 through 8.2.6.5-4
+# Key: (pusch_type, bw, scs, num_rx, propagation)
+# Columns: frc, snr_db (dB), awgn_power_dbm (dBm), awgn_bw (MHz)
+# Propagation: NTN-TDLC5-200 Low (SISO for 1 RX, Low for 2 RX)
+PUSCH_PERF_REQ_8_2_6: dict[tuple[str, int, int, int, str], PuschTestConfig] = {
+    ("A", 5, 15, 1, "NTN_TDLC5_200_SISO"): PuschTestConfig("G-FR1-NTN-A3A-3", -4.5, -86.5, 4.5),
+    ("A", 5, 15, 2, "NTN_TDLC5_200_LOW"): PuschTestConfig("G-FR1-NTN-A3A-3", -7.5, -86.5, 4.5),
+    ("A", 10, 30, 1, "NTN_TDLC5_200_SISO"): PuschTestConfig("G-FR1-NTN-A3A-4", -4.3, -83.6, 8.64),
+    ("A", 10, 30, 2, "NTN_TDLC5_200_LOW"): PuschTestConfig("G-FR1-NTN-A3A-4", -7.3, -83.6, 8.64),
+    ("B", 5, 15, 1, "NTN_TDLC5_200_SISO"): PuschTestConfig("G-FR1-NTN-A3A-3", -4.6, -86.5, 4.5),
+    ("B", 5, 15, 2, "NTN_TDLC5_200_LOW"): PuschTestConfig("G-FR1-NTN-A3A-3", -7.5, -86.5, 4.5),
+    ("B", 10, 30, 1, "NTN_TDLC5_200_SISO"): PuschTestConfig("G-FR1-NTN-A3A-4", -4.3, -83.6, 8.64),
+    ("B", 10, 30, 2, "NTN_TDLC5_200_LOW"): PuschTestConfig("G-FR1-NTN-A3A-4", -7.4, -83.6, 8.64),
+}
+
+
+"""
 §8.3.1 PUCCH Format 0
 """
 

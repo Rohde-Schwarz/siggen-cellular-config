@@ -1,8 +1,4 @@
-"""3GPP TS 38.181 chapter 7 lookup tables.
-
-Values are derived from 3GPP TS 38.181 for SMW configuration. They are not a
-substitute for the official ETSI/3GPP publication. See NOTICE at the GitHub repository root.
-"""
+"""3GPP TS 38.181 chapter 7 lookup tables."""
 
 from typing import NamedTuple
 
@@ -75,6 +71,18 @@ NB_IOT_INBAND_REF_MEAS_CHANNELS: dict[tuple[int, int], str] = {
     (15, 15): "G-FR1-NTN-A1-10",
     (20, 15): "G-FR1-NTN-A1-11",
 }
+
+
+def apply_nb_iot_inband_channel(
+    test_config: TestConfig, bw: int, scs: int, nb_iot_inband: bool,
+) -> TestConfig:
+    if not nb_iot_inband:
+        return test_config
+    try:
+        ref_meas_channel = NB_IOT_INBAND_REF_MEAS_CHANNELS[(bw, scs)]
+    except KeyError:
+        return test_config
+    return TestConfig(ref_meas_channel, test_config.power_dbm, test_config.interfering_power_dbm)
 
 
 """

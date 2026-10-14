@@ -37,7 +37,7 @@ pip install -e .
 ```
 
 This creates a `.venv`, installs `RsInstrument` from `requirements.txt`, and runs `pip install -e .`
-so the shared `utils` and `NR5G` packages are importable from any directory.
+so the shared `utils`, `NR5G`, and `NB_IoT` packages are importable from any directory.
 
 Run all scripts from **`ntn_conformance/`** with the virtual environment activated.
 
@@ -47,7 +47,7 @@ Run all scripts from **`ntn_conformance/`** with the virtual environment activat
 
 ### 1. Configure the global INI files
 
-Before running any test, edit the two global config files in `ntn_conformance/`:
+Before running any test, edit the global config files in `ntn_conformance/`:
 
 **[`instrument.ini`](instrument.ini)** — holds the SMW IP address and connection timeout used by all scripts.
 Leave `ip` empty (the shipped default) to validate without connecting. Do not commit a real
@@ -59,14 +59,16 @@ ip = <ip_address>   # replace with your instrument's IP address
 timeout = 80        # OPC/VISA timeout in seconds (default: 80)
 ```
 
-**[`NR5G/options.ini`](NR5G/options.ini)** — holds shared NR5G options:
+**[`NR5G/options.ini`](NR5G/options.ini)** — shared options for NR (TS 38.181) chapter scripts:
 
 ```ini
 [options]
 log_scpi = true   # when true, writes every SCPI command to scpi-list.iec after each run
 ```
 
-Both files are loaded automatically by every chapter script alongside the per-test INI file.
+**[`NB_IoT/options.ini`](NB_IoT/options.ini)** — same `[options]` layout for NB-IoT (TS 36.181) chapter scripts.
+
+`instrument.ini` and the matching `options.ini` are merged automatically with each per-test INI.
 You only need to edit them once.
 
 ### 2. Understand a test-case INI file
@@ -95,11 +97,15 @@ defines which **RF channels to test** apply — typically **B** (bottom), **M** 
 (top) of the operating band. The scripts do not select B/M/T for you; choose the frequency that
 matches the channel(s) required for that section.
 
-To bulk-update `freq` in NR5G test INIs, run from `ntn_conformance/`:
+To bulk-update `freq` in NR and NB-IoT test INIs, run from `ntn_conformance/`:
 
 ```powershell
-# All NR5G test INIs
+# All NR and NB-IoT test INIs (default)
 python scripts/set_rf_frequency.py --freq 1.62G
+
+# Only NR or only NB-IoT
+python scripts/set_rf_frequency.py --rat nr --freq 1.62G
+python scripts/set_rf_frequency.py --rat nb-iot --freq 1.62G
 
 # Only §7.2 configs
 python scripts/set_rf_frequency.py --section 7_2 --freq 1.62G
@@ -108,10 +114,11 @@ python scripts/set_rf_frequency.py --section 7_2 --freq 1.62G
 python scripts/set_rf_frequency.py --section 7_5 --freq 1.62G --interferer-freq 1.5G
 ```
 
-By default every test INI under `NR5G/ts-38181-chapter7/configs/` and
-`NR5G/ts-38181-chapter8/configs/` with a `freq` key is updated. Use `--section` to limit changes to one config folder (e.g. `7_2`, `7_5`, `8_2_1`).
-For §7.5 configs, `band` is set from the FR1 NTN table (n253–n256) when `--freq` falls inside a band; if it is outside all four
-bands, `freq` is still updated but `band` is left unchanged and a warning is printed.
+By default every test INI under `NR5G/ts-38181-chapter7/configs/`, `NR5G/ts-38181-chapter8/configs/`,
+`NB_IoT/ts-36181-chapter7/configs/`, and `NB_IoT/ts-36181-chapter8/configs/` with a matching key is updated.
+Use `--rat` to limit to one RAT and `--section` to limit changes to one config folder (e.g. `7_2`, `7_5`, `8_2_1`).
+For §7.5 configs, `band` is set from the RAT operating-band table when `--freq` falls inside a band (NR: n253–n256;
+NB-IoT: n249, n252–n256); if it is outside all bands, `freq` is still updated but `band` is left unchanged and a warning is printed.
 `--interferer-freq` is only supported with `--section 7_5`.
 
 ### 3. Run a test
@@ -145,33 +152,42 @@ See the README in each chapter folder for the full parameter reference, lookup t
 | Path | Purpose |
 |------|---------|
 | `NR5G/utils.py` | NR5G-specific utilities (FRC map, SMW configuration functions) |
+| `NB_IoT/utils.py` | NB-IoT-specific utilities (FRC map, SMW configuration functions) |
 | `utils/scpi_utils.py` | SCPI write/query and command logging |
 | `utils/smw_utils.py` | SMW connection and RF configuration |
 | `utils/helpers.py` | Shared Python helpers (e.g. frequency parsing) |
-| `scripts/set_rf_frequency.py` | Bulk-update `freq` (and optionally §7.5 `band` / `interferer_freq`) in NR5G test INIs |
+| `scripts/set_rf_frequency.py` | Bulk-update `freq` (and optionally §7.5 `band` / `interferer_freq`) in NR and NB-IoT test INIs (`--rat`) |
 | `utils/config_utils.py` | Load test parameters from INI config files |
 | `instrument.ini` | SMW instrument IP and timeout (shared by all tests; ship empty, do not commit a real address) |
 | `NR5G/options.ini` | Global options such as `log_scpi` |
-| `NR5G/ts-38181-chapter7/` | Chapter 7 — Conducted receiver characteristics |
-| `NR5G/ts-38181-chapter8/` | Chapter 8 — Conducted performance characteristics |
+| `NB_IoT/options.ini` | Global options for NB-IoT chapter scripts |
+| `NR5G/ts-38181-chapter7/` | TS 38.181 Chapter 7 — Conducted receiver characteristics |
+| `NR5G/ts-38181-chapter8/` | TS 38.181 Chapter 8 — Conducted performance characteristics |
+| `NB_IoT/ts-36181-chapter7/` | TS 36.181 Chapter 7 — Conducted receiver characteristics |
+| `NB_IoT/ts-36181-chapter8/` | TS 36.181 Chapter 8 — Conducted performance characteristics |
 | `pyproject.toml` | Project metadata, dependencies, ruff/ty tooling config |
 | `requirements.txt` | Pinned runtime dependencies |
 | `scpi-list.iec` | Generated by `--log-scpi`; all SCPI write commands from the last run |
 
-See [`NR5G/README.md`](NR5G/README.md) for documentation of all shared NR5G utility functions.
+See [`NR5G/README.md`](NR5G/README.md) for NR shared utility functions and
+[`NB_IoT/README.md`](NB_IoT/README.md) for NB-IoT shared utility functions.
 
 ---
 
 ## Test Chapters
 
-| Chapter | Folder | Description |
-|---------|--------|-------------|
-| 7 — Conducted receiver characteristics | [`NR5G/ts-38181-chapter7/`](NR5G/ts-38181-chapter7/) | Reference sensitivity, dynamic range, ACS, OOB blocking, ICS |
-| 8 — Conducted performance characteristics | [`NR5G/ts-38181-chapter8/`](NR5G/ts-38181-chapter8/) | PUSCH, PUCCH, PRACH performance |
+| Spec | Folder | Description |
+|------|--------|-------------|
+| TS 38.181 Ch. 7 | [`NR5G/ts-38181-chapter7/`](NR5G/ts-38181-chapter7/) | Reference sensitivity, dynamic range, ACS, OOB blocking, ICS |
+| TS 38.181 Ch. 8 | [`NR5G/ts-38181-chapter8/`](NR5G/ts-38181-chapter8/) | PUSCH , PUCCH, PRACH performance |
+| TS 36.181 Ch. 7 | [`NB_IoT/ts-36181-chapter7/`](NB_IoT/ts-36181-chapter7/) | NB-IoT reference sensitivity, dynamic range, ACS, OOB blocking, ICS |
+| TS 36.181 Ch. 8 | [`NB_IoT/ts-36181-chapter8/`](NB_IoT/ts-36181-chapter8/) | NPUSCH, PUCCH, PRACH, and NPRACH performance |
 
-See [`NR5G/ts-38181-chapter7/README.md`](NR5G/ts-38181-chapter7/README.md) for Chapter 7 documentation.  
-See [`NR5G/ts-38181-chapter8/README.md`](NR5G/ts-38181-chapter8/README.md) for Chapter 8 documentation,
-including TS 38.181 §8.2 PUSCH and §8.3 PUCCH applicability rules.
+See [`NR5G/ts-38181-chapter7/README.md`](NR5G/ts-38181-chapter7/README.md) and
+[`NR5G/ts-38181-chapter8/README.md`](NR5G/ts-38181-chapter8/README.md) for NR parameters, lookup tables,
+and applicability rules.  
+See [`NB_IoT/ts-36181-chapter7/README.md`](NB_IoT/ts-36181-chapter7/README.md) and
+[`NB_IoT/ts-36181-chapter8/README.md`](NB_IoT/ts-36181-chapter8/README.md) for NB-IoT documentation.
 
 ---
 
